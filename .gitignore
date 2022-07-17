@@ -1,0 +1,7 @@
+*.png
+*.jpg
+/dist
+/.idea
+/__pycache__
+/images
+/app.spec
