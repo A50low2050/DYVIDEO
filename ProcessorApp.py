@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from youtube_dl import YoutubeDL
-import requests
+
 
 class Processor(QThread):
     chunks = pyqtSignal(int)
@@ -14,6 +14,7 @@ class Processor(QThread):
 
     def run(self):
         try:
+
             with YoutubeDL({'quiet': True}) as ydl:
                 meta = ydl.extract_info(self.url, download=False)
                 video_title = meta.get('title', None)
@@ -38,6 +39,6 @@ class Processor(QThread):
             result = round(percent['downloaded_bytes'] / percent['total_bytes'] * 100, 1)
 
             print(round(percent['downloaded_bytes'] / percent['total_bytes'] * 100, 1))
-            self.chunks.emit(result)
+            self.chunks.emit(int(result))
 
 
