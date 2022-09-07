@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QImage, QPixmap
 from WidgetsApp import Ui_MainWindow
@@ -34,7 +34,7 @@ class App(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionExit.triggered.connect(self.exit)
 
     def select_directory(self):
-        path = QFileDialog.getExistingDirectory(self, 'Выберите папку', ".")
+        path = QFileDialog.getExistingDirectory(self, directory='/home', caption='Explorer')
         self.InputShowPath.setText(path)
 
     def download(self):
@@ -43,13 +43,14 @@ class App(QtWidgets.QMainWindow, Ui_MainWindow):
         url = self.InputUrl.text()
 
         if path and url:
+
             self.start_thread = Processor(url, path)
             self.start_thread.start()
-
-            self.InputShowPath.setText('')
-            self.InputUrl.setText('')
             self.start_thread.chunks.connect(self.progress)
             self.start_thread.info_video.connect(self.show_info)
+
+            self.InputShowPath.setText(path)
+            self.InputUrl.setText('')
 
         else:
             if path == '':
@@ -68,6 +69,7 @@ class App(QtWidgets.QMainWindow, Ui_MainWindow):
             self.ShowDescription.setText('')
 
     def show_info(self, title, description, thumbnails):
+
         self.TitleVideo.setText(title)
         self.ShowDescription.setText(description)
 
@@ -78,6 +80,17 @@ class App(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def exit(self):
         MessageInfo.app_exit(self)
+
+
+def my_exception_hook(exctype, value, traceback):
+    # Print the error and traceback
+    print(exctype, value, traceback)
+
+# Back up the reference to the exceptionhook
+sys._excepthook = sys.excepthook
+
+# Set the exception hook to our wrapping function
+sys.excepthook = my_exception_hook
 
 
 def start_app():
