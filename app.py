@@ -1,105 +1,163 @@
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtWidgets import QFileDialog
+
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QImage, QPixmap
-from WidgetsApp import Ui_MainWindow
-from MessageApp import MessageInfo
+from PyQt5.uic.properties import QtCore
+
+from MessagesApp import MessageInfo
 from ProcessorApp import Processor
+from PyQt5.QtWidgets import QFileDialog
+from Config import BaseConfig, SettingsConfigMenu
+
+import requests
 import sys
 import os
-import requests
+import configparser
+
+from background import bg_image
+from resources import resources
 
 
-try:
-    # Отображает иконку на панели задач
-    from PyQt5.QtWinExtras import QtWin
-    app_version = u'mycompany.myproduct.subproduct.version'
-    QtWin.setCurrentProcessExplicitAppUserModelID(app_version)
-except ImportError:
-    print('[ERROR] The icon cannot be displayed')
-
-os.environ['NO_PROXY'] = '51shucheng.net'
-
-
-class App(QtWidgets.QMainWindow, Ui_MainWindow):
-
+class Ui(QtWidgets.QMainWindow):
     def __init__(self):
-        super(App, self).__init__()
+        super(Ui, self).__init__()
+        uic.loadUi('app.ui', self)
 
-        self.setupUi(self)
-        self.setWindowIcon(QtGui.QIcon('images/YouTube-icon.png'))
-        self.setWindowTitle('Youtube Downloader')
-        self.ButtonChoosePath.clicked.connect(self.select_directory)
-        self.ButtonDownload.clicked.connect(self.download)
+        self.CONFIG_FILE_NAME = 'config.ini'
+        self.show()
 
-        self.actionExit.triggered.connect(self.exit)
+        # All widgets DownloadVideoFrame
 
-    def select_directory(self):
-        path = QFileDialog.getExistingDirectory(self, directory='/home', caption='Explorer')
-        self.InputShowPath.setText(path)
+        self.CancelEnterUrl = self.findChild(QtWidgets.QPushButton, 'CancelEnterUrl')
+        self.EnterUrlText = self.findChild(QtWidgets.QLineEdit, 'EnterUrlText')
+        self.EnterPathSaveLine = self.findChild(QtWidgets.QLineEdit, 'EnterPathSaveLine')
+        self.PathSaveButton = self.findChild(QtWidgets.QPushButton, 'PathSaveButton')
+        self.DownloadVideoButton = self.findChild(QtWidgets.QPushButton, 'DownloadVideoButton')
+        self.ProgressBar = self.findChild(QtWidgets.QProgressBar, 'ProgressBar')
+        self.CheckBox = self.findChild(QtWidgets.QCheckBox, 'CheckBox')
+
+        # All widgets DescriptionFrame
+        self.ImageBackground = self.findChild(QtWidgets.QLabel, 'ImageBackground')
+        self.NameVideoText = self.findChild(QtWidgets.QLabel, 'NameVideoText')
+        self.TitleVideoLine = self.findChild(QtWidgets.QLineEdit, 'TitleVideoLine')
+        self.DescriptionVideoText = self.findChild(QtWidgets.QLabel, 'DescriptionVideoText')
+        self.DescriptionUploadVideo = self.findChild(QtWidgets.QTextEdit, 'DescriptionUploadVideo')
+        self.FileTypeLine = self.findChild(QtWidgets.QLineEdit, 'FileTypeLine')
+
+        # All widgets action which use app
+        self.action_exit = self.findChild(QtWidgets.QAction, 'ActionExit')
+        self.ExitIcon = self.findChild(QtWidgets.QAction, 'ExitIcon')
+        self.ActionConvertAudio = self.findChild(QtWidgets.QAction, 'ActionConvertAudio')
+        self.ActionDefault = self.findChild(QtWidgets.QAction, 'ActionDefault')
+        self.ActionYourPath = self.findChild(QtWidgets.QAction, 'ActionYourPath')
+
+        # All connections with methods
+        self.CancelEnterUrl.clicked.connect(self.clear_enter_url)
+        self.PathSaveButton.clicked.connect(self.choose_directory)
+        self.DownloadVideoButton.clicked.connect(self.download)
+
+        # All actions app which assign
+        self.action_exit.triggered.connect(self.exit)
+        self.ExitIcon.triggered.connect(self.exit)
+        self.ActionYourPath.triggered.connect(self.load_new_path)
+        self.ActionDefault.triggered.connect(self.load_default_path)
+        self.CheckBox.clicked.connect(self.convert_auto_audio)
+        # self.ActionConvertAudio.triggered.connect(self.convert_auto_audio)
+
+        self.load_settings()
+
+    def clear_enter_url(self):
+        self.EnterUrlText.setText('')
+
+    def choose_directory(self):
+        directory = QFileDialog.getExistingDirectory(self, directory='/Локальный диск (C:)', caption='Explorer')
+        self.EnterPathSaveLine.setText(directory)
 
     def download(self):
+        path = self.EnterPathSaveLine.text()
+        url = self.EnterUrlText.text()
+        check_status = self.CheckBox.checkState()
+        type_file = BaseConfig().get_type_file()
 
-        path = self.InputShowPath.text()
-        url = self.InputUrl.text()
-
-        if path and url:
-
-            self.start_thread = Processor(url, path)
+        if url and path:
+            self.start_thread = Processor(url, path, check_status, type_file)
             self.start_thread.start()
-            self.start_thread.chunks.connect(self.progress)
             self.start_thread.info_video.connect(self.show_info)
+            self.start_thread.chunks.connect(self.progress)
 
-            self.InputShowPath.setText(path)
-            self.InputUrl.setText('')
-
+            self.EnterPathSaveLine.setText(path)
+            self.EnterUrlText.setText('')
         else:
-            if path == '':
-                MessageInfo.message_path(self)
-
-            elif url == '':
+            if url == '':
                 MessageInfo.message_url(self)
 
-    def progress(self, chunks):
-        self.progressBar.setValue(chunks)
+            elif path == '':
+                MessageInfo.message_path(self)
 
-        if self.progressBar.value() == 100:
-            self.progressBar.setValue(0)
-
-            self.TitleVideo.setText('Загрузка видео завершенна')
-            self.ShowDescription.setText('')
-
-    def show_info(self, title, description, thumbnails):
-
-        self.TitleVideo.setText(title)
-        self.ShowDescription.setText(description)
+    def show_info(self, title: str, description: str, thumbnail: str, type_file: str):
+        self.TitleVideoLine.setText(title)
+        self.DescriptionUploadVideo.setText(description)
+        self.FileTypeLine.setText(type_file)
 
         image = QImage()
-        image.loadFromData(requests.get(thumbnails).content)
-        self.photo.setPixmap(QPixmap(image))
-        self.photo.show()
+        image.loadFromData(requests.get(thumbnail).content)
+        self.ImageBackground.setPixmap(QPixmap(image))
+        self.ImageBackground.show()
+
+    def progress(self, chunks: int):
+        self.ProgressBar.setValue(chunks)
+
+        if self.ProgressBar.value() == 100:
+            self.ProgressBar.setValue(0)
+            self.TitleVideoLine.setText('')
+            self.DescriptionUploadVideo.setText('')
+            self.ImageBackground.setPixmap(QPixmap(os.path.join(os.getcwd(), 'background/youtube.jpg')))
+            self.FileTypeLine.setText('')
 
     def exit(self):
         MessageInfo.app_exit(self)
 
+    def load_settings(self):
 
-def my_exception_hook(exctype, value, traceback):
-    # Print the error and traceback
-    print(exctype, value, traceback)
+        config = configparser.ConfigParser()
+        config.read('config.ini')
 
-# Back up the reference to the exceptionhook
-sys._excepthook = sys.excepthook
+        get_path_status = config.get('SETTINGS_PATH', 'status')
+        get_directory = config.get('SETTINGS_PATH', 'directory')
 
-# Set the exception hook to our wrapping function
-sys.excepthook = my_exception_hook
+        get_auto_convert_status = config.get('SETTINGS_AUDIO_CONVERT', 'status')
 
+        if get_path_status == 'True':
+            self.ActionDefault.setChecked(True)
+            self.ActionYourPath.setChecked(False)
+            self.EnterPathSaveLine.setText(get_directory)
 
-def start_app():
-    app = QtWidgets.QApplication(sys.argv)
-    window = App()
-    window.show()
-    app.exec_()
+        else:
+            self.ActionDefault.setChecked(False)
+            self.ActionYourPath.setChecked(True)
+            self.EnterPathSaveLine.setText(get_directory)
+
+        if get_auto_convert_status == 'True':
+            self.CheckBox.setChecked(True)
+        else:
+            self.CheckBox.setChecked(False)
+
+    def load_new_path(self):
+        directory = QFileDialog.getExistingDirectory(self, directory='/Локальный диск (C:)', caption='Explorer')
+        SettingsConfigMenu.get_user_path(self, directory)
+        self.load_settings()
+
+    def load_default_path(self):
+        SettingsConfigMenu.get_default_path(self)
+        self.load_settings()
+
+    def convert_auto_audio(self):
+        status = self.CheckBox.isChecked()
+        SettingsConfigMenu.update_status_convert_audio(self, status)
 
 
 if __name__ == '__main__':
-    start_app()
+    app = QtWidgets.QApplication(sys.argv)
+    window = Ui()
+    app.exec_()
 
