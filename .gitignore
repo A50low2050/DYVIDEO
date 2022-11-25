@@ -5,6 +5,8 @@
 *.idea
 *.spec
 *.exe
+*.db
+*.idea
 /dist
 /__pycache__
 /images
