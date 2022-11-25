@@ -8,7 +8,7 @@
 *.db
 *.idea
 /dist
-/__pycache__
+*__pycache__
 /images
 /venv
 /build
