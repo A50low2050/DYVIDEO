@@ -1,18 +1,19 @@
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QSettings
+from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5.QtCore import QModelIndex
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.uic.properties import QtCore
 
 from MessagesApp import MessageInfo
 from ProcessorApp import Processor
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QTableWidgetItem, QHeaderView
 from Config import BaseConfig, SettingsConfigMenu
 
 import requests
 import sys
 import os
 import configparser
+
+from Dbase.database import *
 
 from background import bg_image
 from resources import resources
@@ -35,6 +36,8 @@ class Ui(QtWidgets.QMainWindow):
         self.DownloadVideoButton = self.findChild(QtWidgets.QPushButton, 'DownloadVideoButton')
         self.ProgressBar = self.findChild(QtWidgets.QProgressBar, 'ProgressBar')
         self.CheckBox = self.findChild(QtWidgets.QCheckBox, 'CheckBox')
+        self.CacheTable = self.findChild(QtWidgets.QTableView, 'CacheTable')
+        self.CacheButton = self.findChild(QtWidgets.QPushButton, 'CacheButton')
 
         # All widgets DescriptionFrame
         self.ImageBackground = self.findChild(QtWidgets.QLabel, 'ImageBackground')
@@ -55,6 +58,7 @@ class Ui(QtWidgets.QMainWindow):
         self.CancelEnterUrl.clicked.connect(self.clear_enter_url)
         self.PathSaveButton.clicked.connect(self.choose_directory)
         self.DownloadVideoButton.clicked.connect(self.download)
+        self.CacheButton.clicked.connect(self.clear_cache)
 
         # All actions app which assign
         self.action_exit.triggered.connect(self.exit)
@@ -62,8 +66,9 @@ class Ui(QtWidgets.QMainWindow):
         self.ActionYourPath.triggered.connect(self.load_new_path)
         self.ActionDefault.triggered.connect(self.load_default_path)
         self.CheckBox.clicked.connect(self.convert_auto_audio)
-        # self.ActionConvertAudio.triggered.connect(self.convert_auto_audio)
 
+        self.CacheTable.itemSelectionChanged.connect(self.on_selection)
+        self.show_cache()
         self.load_settings()
 
     def clear_enter_url(self):
@@ -79,14 +84,17 @@ class Ui(QtWidgets.QMainWindow):
         check_status = self.CheckBox.checkState()
         type_file = BaseConfig().get_type_file()
 
-        if url and path:
-            self.start_thread = Processor(url, path, check_status, type_file)
+        check_url = MessageInfo.message_wrong_enter_url(self, url)
+        if check_url and path:
+            self.EnterUrlText.setText(check_url)
+            self.start_thread = Processor(check_url, path, check_status, type_file)
             self.start_thread.start()
             self.start_thread.info_video.connect(self.show_info)
             self.start_thread.chunks.connect(self.progress)
+            self.start_thread.get_cache.connect(self.add_data_db)
+            self.start_thread.show_cache.connect(self.show_cache)
 
             self.EnterPathSaveLine.setText(path)
-            self.EnterUrlText.setText('')
         else:
             if url == '':
                 MessageInfo.message_url(self)
@@ -94,17 +102,18 @@ class Ui(QtWidgets.QMainWindow):
             elif path == '':
                 MessageInfo.message_path(self)
 
-    def show_info(self, title: str, description: str, thumbnail: str, type_file: str):
+    def show_info(self, title: str, description: str, thumbnail: str, type_file: str) -> None:
         self.TitleVideoLine.setText(title)
         self.DescriptionUploadVideo.setText(description)
         self.FileTypeLine.setText(type_file)
+        self.EnterUrlText.setText('')
 
         image = QImage()
         image.loadFromData(requests.get(thumbnail).content)
         self.ImageBackground.setPixmap(QPixmap(image))
         self.ImageBackground.show()
 
-    def progress(self, chunks: int):
+    def progress(self, chunks: int) -> None:
         self.ProgressBar.setValue(chunks)
 
         if self.ProgressBar.value() == 100:
@@ -155,6 +164,55 @@ class Ui(QtWidgets.QMainWindow):
         status = self.CheckBox.isChecked()
         SettingsConfigMenu.update_status_convert_audio(self, status)
 
+    def add_data_db(self, title: str, type_file: str) -> None:
+        connect = connect_db()
+        add_data_db(connect, title=title, type_file=type_file)
+
+    def show_cache(self):
+        connect = connect_db()
+        data = get_data_db(connect)
+        rows = get_count_rows(connect)
+
+        self.CacheTable.setRowCount(0)
+        self.CacheTable.setColumnCount(2)
+        self.CacheTable.setHorizontalHeaderLabels(['Name file', 'Type file'])
+        self.CacheTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        row_index = 0
+        for elem in data:
+            self.CacheTable.setRowCount(rows)
+            col_index = 0
+            self.CacheTable.setItem(row_index, col_index, QTableWidgetItem(str(elem['title'])))
+            col_index += 1
+            self.CacheTable.setItem(row_index, col_index, QTableWidgetItem(str(elem['type_file'])))
+            row_index += 1
+
+    def on_selection(self):
+        self.CacheTable.setCurrentIndex(QModelIndex())
+
+    def clear_cache(self):
+        connect = connect_db()
+        data = get_data_db(connect)
+
+        if data:
+            clear_all(connect)
+            # restart app
+            QtCore.QCoreApplication.quit()
+            QtCore.QProcess.startDetached(sys.executable, sys.argv)
+
+
+def my_exception_hook(exctype, value, traceback):
+    # Print the error and traceback
+    print(exctype, value, traceback)
+    # Call the normal Exception hook after
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+
+# Back up the reference to the exceptionhook
+sys._excepthook = sys.excepthook
+
+# Set the exception hook to our wrapping function
+sys.excepthook = my_exception_hook
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
