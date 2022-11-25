@@ -1,4 +1,10 @@
+
 import configparser
+import os
+
+BASE_PATH = 'Dbase'
+DATABASE = 'cache.db'
+DATABASE_PATH = os.path.join(BASE_PATH, DATABASE)
 
 
 class BaseConfig:
