@@ -1,7 +1,5 @@
 
-<<<<<<< HEAD
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-=======
 from PyQt5 import QtCore, QtWidgets, uic
 >>>>>>> fda8ce61c61a4d072b09f5f4319400da2fcd47ab
 from PyQt5.QtCore import QModelIndex
@@ -18,10 +16,7 @@ import os
 import configparser
 
 from Dbase.database import *
-<<<<<<< HEAD
-=======
 
->>>>>>> fda8ce61c61a4d072b09f5f4319400da2fcd47ab
 from background import bg_image
 from resources import resources
 
