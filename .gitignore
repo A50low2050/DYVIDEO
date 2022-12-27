@@ -5,8 +5,10 @@
 *.idea
 *.spec
 *.exe
+*.db
+*.txt
+*__pycache__
 /dist
-/__pycache__
 /images
 /venv
 /build
