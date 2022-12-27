@@ -1,5 +1,5 @@
-# DYVIDEO
-Uploads videos from YouTube
+# ArtVideo
+:pushpin: Uploads video from YouTube
 
 # Download ArtVideo
 
