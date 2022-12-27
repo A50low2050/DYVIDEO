@@ -1,3 +1,5 @@
+import re
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QApplication
@@ -25,13 +27,18 @@ class MessageInfo(object):
         message.setStandardButtons(QMessageBox.Ok)
         message.exec_()
 
-    def message_wrong_enter_url(self):
-        message = QMessageBox()
-        message.setIcon(QMessageBox.Information)
-        message.setWindowTitle('Ошибка ввода url')
-        message.setText('Неправильный ввод url')
-        message.setStandardButtons(QMessageBox.Ok)
-        message.exec_()
+    def message_wrong_enter_url(self, url):
+        match_url = r'(https?://)(www\.(youtube|youtu|youtube-nocookie)\.(com)/(watch\?v=[\w-]{11}))'
+        res = re.match(match_url, url)
+        if res:
+            return res.group()
+        else:
+            message = QMessageBox()
+            message.setIcon(QMessageBox.Information)
+            message.setWindowTitle('Wrong url')
+            message.setText('You enter wrong url')
+            message.setStandardButtons(QMessageBox.Ok)
+            message.exec_()
 
     def app_exit(self):
         message = QMessageBox()
