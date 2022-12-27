@@ -1,4 +1,10 @@
+
 import configparser
+import os
+
+BASE_PATH = 'Dbase'
+DATABASE = 'cache.db'
+DATABASE_PATH = os.path.join(BASE_PATH, DATABASE)
 
 
 class BaseConfig:
@@ -28,6 +34,7 @@ class SettingsConfigMenu:
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
+            configfile.close()
 
         return config
 
@@ -41,6 +48,7 @@ class SettingsConfigMenu:
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
+            configfile.close()
 
         return config
 
@@ -52,6 +60,7 @@ class SettingsConfigMenu:
 
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
+            configfile.close()
 
         return config
 
