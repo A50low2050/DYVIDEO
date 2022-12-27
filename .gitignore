@@ -6,9 +6,15 @@
 *.spec
 *.exe
 *.db
+<<<<<<< HEAD
 *.txt
 *__pycache__
 /dist
+=======
+*.idea
+/dist
+*__pycache__
+>>>>>>> fda8ce61c61a4d072b09f5f4319400da2fcd47ab
 /images
 /venv
 /build
