@@ -1,16 +1,15 @@
 
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5 import QtGui
 from PyQt5 import QtCore, QtWidgets, uic
->>>>>>> fda8ce61c61a4d072b09f5f4319400da2fcd47ab
+
 from PyQt5.QtCore import QModelIndex
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QPixmap
 
 from MessagesApp import MessageInfo
 from ProcessorApp import Processor
 from PyQt5.QtWidgets import QFileDialog, QTableWidgetItem, QHeaderView
 from Config import BaseConfig, SettingsConfigMenu
 
-from urllib import request
 import sys
 import os
 import configparser
@@ -98,6 +97,7 @@ class Ui(QtWidgets.QMainWindow):
         type_file = BaseConfig().get_type_file()
 
         check_url = MessageInfo.message_wrong_enter_url(self, url)
+
         if check_url and path:
             self.EnterUrlText.setText(check_url)
             self.start_thread = Processor(check_url, path, check_status, type_file)
@@ -115,16 +115,11 @@ class Ui(QtWidgets.QMainWindow):
             elif path == '':
                 MessageInfo.message_path(self)
 
-    def show_info(self, title: str, description: str, thumbnail: str, type_file: str) -> None:
+    def show_info(self, title: str, description: str, type_file: str) -> None:
         self.TitleVideoLine.setText(title)
         self.DescriptionUploadVideo.setText(description)
         self.FileTypeLine.setText(type_file)
         self.EnterUrlText.setText('')
-
-        image = QImage()
-        image.loadFromData(request.urlopen(thumbnail).read())
-        self.ImageBackground.setPixmap(QPixmap(image))
-        self.ImageBackground.show()
 
     def progress(self, chunks: int) -> None:
         self.ProgressBar.setValue(chunks)
@@ -215,20 +210,14 @@ class Ui(QtWidgets.QMainWindow):
 
 
 def my_exception_hook(exctype, value, traceback):
-    # Print the error and traceback
     print(exctype, value, traceback)
-    # Call the normal Exception hook after
     sys._excepthook(exctype, value, traceback)
     sys.exit(1)
 
-# Back up the reference to the exceptionhook
 sys._excepthook = sys.excepthook
-
-# Set the exception hook to our wrapping function
 sys.excepthook = my_exception_hook
 
 if __name__ == '__main__':
-    # subprocess.call('notepad.exe')
     app = QtWidgets.QApplication(sys.argv)
     window = Ui()
     app.exec_()
