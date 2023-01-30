@@ -4,7 +4,7 @@ from youtube_dl import YoutubeDL
 
 class Processor(QThread):
     chunks = pyqtSignal(int)
-    info_video = pyqtSignal(str, str, str, str)
+    info_video = pyqtSignal(str, str, str)
     get_cache = pyqtSignal(str, str)
     show_cache = pyqtSignal()
 
@@ -24,9 +24,8 @@ class Processor(QThread):
                     meta = ydl.extract_info(self.url, download=False)
                     video_title = meta.get('title', None)
                     video_description = meta.get('description', None)
-                    video_thumbnails = meta['thumbnails'][3]['url']
 
-                    self.info_video.emit(video_title, video_description, video_thumbnails, type_video)
+                    self.info_video.emit(video_title, video_description, type_video)
                     self.get_cache.emit(video_title, type_video)
                     self.show_cache.emit()
 
@@ -44,9 +43,8 @@ class Processor(QThread):
                     meta = ydl.extract_info(self.url, download=False)
                     audio_title = meta.get('title', None)
                     audio_description = meta.get('description', None)
-                    audio_thumbnails = meta['thumbnails'][3]['url']
 
-                    self.info_video.emit(audio_title, audio_description, audio_thumbnails, type_audio)
+                    self.info_video.emit(audio_title, audio_description, type_audio)
                     self.get_cache.emit(audio_title, type_audio)
                     self.show_cache.emit()
 
