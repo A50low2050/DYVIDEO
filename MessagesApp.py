@@ -32,8 +32,11 @@ class MessageInfo(object):
         res = re.match(match_url, url)
         if res:
             return res.group()
+        elif url == '':
+            return None
         else:
             message = QMessageBox()
+            message.setWindowIcon(QIcon('icons/icons_messages/info.png'))
             message.setIcon(QMessageBox.Information)
             message.setWindowTitle('Wrong url')
             message.setText('You enter wrong url')
