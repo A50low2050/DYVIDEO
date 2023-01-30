@@ -8,6 +8,7 @@
 *.db
 *.idea
 *.txt
+*.cmd
 *__pycache__
 /dist
 /dist
